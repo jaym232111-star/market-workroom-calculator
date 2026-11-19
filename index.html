@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Calculate craft fair break-even orders and estimated booth profit with a free tool for market vendors. Includes a printable worksheet.">
+<title>Craft Fair Break-Even Calculator | The Market Workroom</title>
+<style>
+:root { color:#23392f; background:#f5eee1; font:1rem/1.6 system-ui,sans-serif }
+* { box-sizing:border-box }
+body { margin:0 }
+header { background:#23392f; color:#fff5df; padding:2.5rem max(1rem,calc((100% - 65rem)/2)) }
+header p { margin:0; color:#f3bf8b; letter-spacing:.09em; font-weight:700 }
+h1,h2 { font-family:Georgia,serif; line-height:1.15 }
+h1 { font-size:clamp(2.35rem,6vw,4.6rem); margin:.25em 0 0 }
+main { max-width:67rem; margin:auto; padding:2rem 1rem }
+section { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr)); gap:1.4rem }
+form, aside { background:#fffbf2; border:1px solid #cbbda7; padding:1.35rem; border-radius:.75rem }
+.fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr)); gap:.85rem }
+label { display:block; font-weight:650 }
+input,button { font:inherit }
+input { display:block; width:100%; min-height:2.6rem; padding:.4rem .65rem; border:1px solid #766f5f; border-radius:.35rem }
+button { margin-top:1rem; padding:.55rem 1rem; background:#23392f; color:white; border:0; border-radius:.35rem; cursor:pointer }
+:focus-visible { outline:3px solid #a65428; outline-offset:3px }
+aside { background:#eedab8 }
+aside h2 { margin-top:0 }
+dl { display:grid; grid-template-columns:1fr auto; gap:.65rem; align-items:start }
+dt,dd { margin:0 }
+dd { font-variant-numeric:tabular-nums; font-weight:750 }
+footer { margin-top:1.5rem }
+a { color:#285441; font-weight:700 }
+</style>
+</head>
+<body>
+<header><p>THE MARKET WORKROOM</p><h1>Will this craft fair pay off?</h1></header>
+<main>
+<p>Estimate how many orders cover your booth, travel and other event costs. Start with the fictional Saturday market below or enter your own numbers.</p>
+<section aria-label="Booth calculator">
+<form id="booth">
+<div class="fields">
+<label>Fixed event costs ($)<input name="fixed" type="number" min="0" max="1000000" step=".01" value="105" required></label>
+<label>Revenue per order ($)<input name="revenue" type="number" min="0" max="1000000" step=".01" value="24" required></label>
+<label>Cost per order ($)<input name="cost" type="number" min="0" max="1000000" step=".01" value="9.02" required></label>
+<label>Expected orders<input name="orders" type="number" min="0" max="1000000" step="1" value="30" required></label>
+<label>Profit goal ($)<input name="target" type="number" min="0" max="1000000" step=".01" value="250" required></label>
+</div>
+<p>Exclude sales tax from revenue. Include materials, packaging and average payment fees in cost per order.</p>
+<button type="submit">Calculate</button>
+</form>
+<aside aria-labelledby="summary">
+<h2 id="summary">Your event estimate</h2>
+<dl aria-live="polite">
+<dt>Contribution per order</dt><dd id="contribution">$14.98</dd>
+<dt>Break-even orders</dt><dd id="breakEven">8</dd>
+<dt>Profit at expected orders</dt><dd id="profit">$344.40</dd>
+<dt>Orders for your profit goal</dt><dd id="goal">24</dd>
+</dl>
+<p id="note" role="status">Results depend on the assumptions you enter.</p>
+</aside>
+</section>
+<footer>
+<h2>How to calculate craft fair break-even</h2>
+<p>Subtract product costs and average payment fees from revenue per order. Divide your fixed event costs by the amount left per order, then round up. If orders contribute zero or less, selling more at the same price cannot cover positive fixed costs.</p>
+<p>In the sample, each order contributes $14.98 toward $105 in fixed costs. Seven orders leave you $0.14 short, and eight orders cover the booth. Try a second calculation with a slower sales day before booking.</p>
+<h2>Compare a second market</h2>
+<p>The Booth Profit Calculator for Excel compares two events side by side, including a slower-day forecast. <a href="https://payhip.com/b/wTBop">View the Excel calculator on Payhip ($7.95)</a> or <a href="market-workroom-booth-break-even-sample.pdf">open the free printable worksheet</a>.</p>
+</footer>
+</main>
+<script>
+function estimate({fixed, revenue, cost, orders, target}) {
+  const cents = amount => Math.round(amount * 100);
+  const eventCost = cents(fixed);
+  const contribution = cents(revenue) - cents(cost);
+  const targetCost = eventCost + cents(target);
+  const ordersFor = amount => {
+    if (amount === 0) return 0;
+    return contribution > 0 ? Math.ceil(amount / contribution) : null;
+  };
+  return {
+    contribution,
+    breakEven: ordersFor(eventCost),
+    profit: contribution * orders - eventCost,
+    goal: ordersFor(targetCost)
+  };
+}
+
+const form = document.getElementById('booth');
+const money = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD'});
+const count = new Intl.NumberFormat('en-US');
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  if (!form.reportValidity()) return;
+  const inputs = Object.fromEntries(Array.from(new FormData(form), ([name, value]) => [name, Number(value)]));
+  const result = estimate(inputs);
+  document.getElementById('contribution').textContent = money.format(result.contribution / 100);
+  document.getElementById('profit').textContent = money.format(result.profit / 100);
+  document.getElementById('breakEven').textContent = result.breakEven === null ? 'Unreachable' : count.format(result.breakEven);
+  document.getElementById('goal').textContent = result.goal === null ? 'Unreachable' : count.format(result.goal);
+  document.getElementById('note').textContent = result.contribution <= 0
+    ? 'Each extra order contributes zero or less. Check your pricing and costs before committing.'
+    : 'Results depend on the assumptions you enter.';
+});
+</script>
+</body>
+</html>
+
+
